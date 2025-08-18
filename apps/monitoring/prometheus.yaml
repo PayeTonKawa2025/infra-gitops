@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    namespace: monitoring
+    name: in-cluster
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true
+  source:
+    chart: prometheus
+    repoURL: 'https://prometheus-community.github.io/helm-charts'
+    targetRevision: 27.7.0
+    helm:
+      values: |
+        fullnameOverride: prometheus
+        alertmanager:
+          enabled: false
+        prometheus-pushgateway:
+          enabled: false

@@ -1,0 +1,76 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ingress-nginx
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    namespace: ingress-nginx
+    name: in-cluster
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true
+  source:
+    chart: ingress-nginx
+    repoURL: 'https://kubernetes.github.io/ingress-nginx'
+    targetRevision: 4.12.1
+    helm:
+      values: |
+        fullnameOverride: ingress-nginx
+        controller:
+          service:
+            externalTrafficPolicy: Local
+          nodeSelector:
+            ingress-nginx: enabled
+          config:
+            use-forwarded-headers: "true"
+            real-ip-header: "X-Forwarded-For"
+            set-real-ip-from: "0.0.0.0/0"
+            server-tokens: "false"
+            enable-custom-errors: "true"
+            allow-snippet-annotations: "true"
+            annotations-risk-level: Critical
+            proxy-cache-paths: "/data/nginx/cache levels=1:2 keys_zone=STATIC:10m inactive=24h max_size=1g"
+          metrics:
+            enabled: true
+          podAnnotations:
+            prometheus.io/scrape: "true"
+            prometheus.io/port: "10254"
+            prometheus.io/scheme: http
+          allowSnippetAnnotations: true
+          kind: DaemonSet
+          watchIngressWithoutClass: true
+          ingressClassResource:
+            default: true
+          resources:
+            limits:
+              memory: 300Mi
+            requests:
+              cpu: 100m
+              memory: 300Mi
+          extraVolumes:
+            - name: nginx-cache
+              emptyDir: {}
+          extraVolumeMounts:
+            - name: nginx-cache
+              mountPath: /data/nginx/cache
+        defaultBackend:
+          enabled: true
+        admissionWebhooks:
+          patch:
+            nodeSelector:
+              ingress-nginx: enabled
+          createSecretJob:
+            nodeSelector:
+              ingress-nginx: enabled
+          create:
+            nodeSelector:
+              ingress-nginx: enabled
