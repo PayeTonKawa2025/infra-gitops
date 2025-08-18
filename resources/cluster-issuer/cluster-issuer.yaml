@@ -4,13 +4,13 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
     argocd.argoproj.io/sync-wave: "1"
-  name: letsencrypt-prod
+  name: ptk-letsencrypt-prod
 spec:
   acme:
     email: ptk@zertus.fr
     server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
-      name: letsencrypt-prod
+      name: ptk-letsencrypt-prod
     solvers:
       - http01:
           ingress:

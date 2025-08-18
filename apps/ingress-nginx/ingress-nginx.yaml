@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ingress-nginx
+  name: ptk-ingress-nginx
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "0"
@@ -10,7 +10,7 @@ metadata:
 spec:
   project: default
   destination:
-    namespace: ingress-nginx
+    namespace: ptk-ingress-nginx
     name: in-cluster
   syncPolicy:
     syncOptions:
