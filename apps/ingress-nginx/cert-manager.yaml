@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ptk-cert-manager
+  name: cert-manager
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "0"
@@ -10,7 +10,7 @@ metadata:
 spec:
   project: default
   destination:
-    namespace: ptk-ingress-nginx
+    namespace: ingress-nginx
     name: in-cluster
   syncPolicy:
     syncOptions:

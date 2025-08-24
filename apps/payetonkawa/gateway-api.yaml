@@ -1,0 +1,106 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gateway-api
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    namespace: payetonkawa
+    name: in-cluster
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true
+  source:
+    chart: spring-boot-helm-chart
+    repoURL: 'ghcr.io/payetonkawa2025/spring-boot-helm-chart'
+    targetRevision: 1.0.2
+    helm:
+      values: |
+        fullnameOverride: "gateway-api"
+        image:
+          repository: "ghcr.io/payetonkawa2025/gateway-api"
+          tag: "1.0.3"
+        ingress:
+          enabled: true
+          className: "nginx"
+          hosts:
+            - host: api.payetonkawa.fr
+              paths:
+                - path: /api(/|$)(.*)
+                  pathType: ImplementationSpecific
+                  backend:
+                    service:
+                      name: gateway-api
+                      port:
+                        number: 8080
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt-prod
+          tls:
+            - secretName: tls-api-payetonkawa-fr
+              hosts:
+                - "api.payetonkawa.fr"
+        env:
+          - name: DB_URL
+            valueFrom:
+              secretKeyRef:
+                name: postgresql-gateway-api
+                key: url
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: postgresql-gateway-api
+                key: username
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgresql-gateway-api
+                key: password
+          - name: RABBITMQ_USER
+            valueFrom:
+              secretKeyRef:
+                name: rabbitmq-auth
+          - name: RABBITMQ_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: rabbitmq-auth
+          - name: GATEWAY_PORT
+            value: 8080
+          - name: AUTH_SERVICE_URI
+            value: http://auth-service:8080
+          - name: PRODUCTS_API_URI
+            value: http://products-api:8080
+          - name: CLIENTS_API_URI
+            value: http://clients-api:8080
+          - name: ORDERS_API_URI
+            value: http://orders-api:8080
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 20
+        service:
+          type: ClusterIP
+          port: 8080
+        applicationProperties: |
+          spring.datasource.url=${DB_URL}
+          spring.datasource.username=${DB_USER}
+          spring.datasource.password=${DB_PASSWORD}
+          spring.jpa.show-sql=false
+          rabbitmq.host=rabbitmq.payetonkawa.svc.cluster.local
+          rabbitmq.port=5672
+          rabbitmq.username=${RABBITMQ_USER}
+          rabbitmq.password=${RABBITMQ_PASSWORD}
+

@@ -1,0 +1,77 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: auth-service
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    namespace: payetonkawa
+    name: in-cluster
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true
+  source:
+    chart: spring-boot-helm-chart
+    repoURL: 'ghcr.io/payetonkawa2025/spring-boot-helm-chart'
+    targetRevision: 1.0.2
+    helm:
+      values: |
+        fullnameOverride: "auth-service"
+        image:
+          repository: "ghcr.io/payetonkawa2025/auth-service"
+          tag: "1.0.2"
+        env:
+          - name: DB_URL
+            valueFrom:
+              secretKeyRef:
+                name: postgresql-auth-service
+                key: url
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: postgresql-auth-service
+                key: username
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgresql-auth-service
+                key: password
+          - name: RABBITMQ_USER
+            valueFrom:
+              secretKeyRef:
+                name: rabbitmq-auth
+          - name: RABBITMQ_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: rabbitmq-auth
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 20
+        service:
+          type: ClusterIP
+          port: 8080
+        applicationProperties: |
+          spring.datasource.url=${DB_URL}
+          spring.datasource.username=${DB_USER}
+          spring.datasource.password=${DB_PASSWORD}
+          spring.jpa.show-sql=false
+          rabbitmq.host=rabbitmq.payetonkawa.svc.cluster.local
+          rabbitmq.port=5672
+          rabbitmq.username=${RABBITMQ_USER}
+          rabbitmq.password=${RABBITMQ_PASSWORD}
+
