@@ -27,7 +27,7 @@ spec:
         fullnameOverride: "auth-service"
         image:
           repository: "ghcr.io/payetonkawa2025/auth-service"
-          tag: "1.0.2"
+          tag: "1.0.3"
         env:
           - name: DB_URL
             valueFrom:
@@ -74,4 +74,3 @@ spec:
           rabbitmq.port=5672
           rabbitmq.username=${RABBITMQ_USER}
           rabbitmq.password=${RABBITMQ_PASSWORD}
-
